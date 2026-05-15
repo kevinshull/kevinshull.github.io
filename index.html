@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investment Growth Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f5f2;
+      --bg-tertiary: #f0ede8;
+      --text-primary: #1a1a18;
+      --text-secondary: #5f5e5a;
+      --text-tertiary: #888780;
+      --border: rgba(0,0,0,0.1);
+      --border-strong: rgba(0,0,0,0.18);
+      --accent: #534ab7;
+      --accent-light: rgba(175,169,236,0.35);
+      --contrib-color: #b4b2a9;
+      --contrib-light: rgba(180,178,169,0.35);
+      --success: #1d9e75;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a18;
+        --bg-secondary: #242422;
+        --bg-tertiary: #2c2c2a;
+        --text-primary: #e8e6df;
+        --text-secondary: #9a9891;
+        --text-tertiary: #6b6a66;
+        --border: rgba(255,255,255,0.1);
+        --border-strong: rgba(255,255,255,0.18);
+        --accent: #7f77dd;
+        --accent-light: rgba(83,74,183,0.35);
+        --contrib-color: #888780;
+        --contrib-light: rgba(95,94,90,0.35);
+        --success: #5dcaa5;
+      }
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 740px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .card {
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      border: 0.5px solid var(--border);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin: 1.25rem 0 .6rem;
+    }
+
+    .section-label:first-child { margin-top: 0; }
+
+    .inv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 500px) {
+      .inv-grid { grid-template-columns: 1fr; }
+      .metric-cards { grid-template-columns: 1fr 1fr; }
+    }
+
+    .inv-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .inv-field label {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .inv-field input {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--bg-secondary);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .inv-field input:focus { border-color: var(--accent); }
+
+    .inv-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .inv-row label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      width: 210px;
+      flex-shrink: 0;
+    }
+
+    input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: var(--border-strong);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      transition: transform .1s;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    input[type=range]::-moz-range-thumb {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--accent); border: none; cursor: pointer;
+    }
+
+    .inv-row .val {
+      font-size: 13px;
+      font-weight: 500;
+      min-width: 72px;
+      text-align: right;
+      color: var(--text-primary);
+    }
+
+    .contrib-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .contrib-toggle input[type=checkbox] { cursor: pointer; accent-color: var(--accent); }
+    .contrib-toggle label { font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+
+    .increase-block { padding: 4px 0 4px; }
+
+    hr.divider {
+      border: none;
+      border-top: 0.5px solid var(--border);
+      margin: 1.25rem 0;
+    }
+
+    .metric-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 1.25rem 0;
+    }
+
+    .metric-card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: .85rem 1rem;
+    }
+
+    .mc-label { font-size: 12px; color: var(--text-secondary); margin: 0 0 4px; }
+    .mc-val { font-size: 20px; font-weight: 500; margin: 0; color: var(--text-primary); }
+    .mc-sub { font-size: 11px; color: var(--text-tertiary); margin: 2px 0 0; }
+
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 260px;
+      margin-bottom: 1.25rem;
+    }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    th:not(:first-child) { text-align: right; }
+
+    td {
+      padding: 9px 8px;
+      border-bottom: 0.5px solid var(--border);
+      color: var(--text-primary);
+    }
+
+    td:not(:first-child) { text-align: right; }
+    tr:last-child td { border-bottom: none; }
+
+    tr.highlight td {
+      background: var(--bg-secondary);
+      font-weight: 500;
+    }
+
+    .gain-cell { color: var(--success); }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>Investment growth calculator</h1>
+      <p>See how your money compounds over time with consistent contributions.</p>
+    </header>
+
+    <div class="card">
+
+      <p class="section-label">Starting point</p>
+      <div class="inv-grid">
+        <div class="inv-field">
+          <label for="initialBalance">Initial balance ($)</label>
+          <input type="number" id="initialBalance" value="10000" min="0" step="1000">
+        </div>
+        <div class="inv-field">
+          <label for="years">Time horizon (years)</label>
+          <input type="number" id="years" value="30" min="5" max="60" step="5">
+        </div>
+      </div>
+
+      <p class="section-label">Rate of return</p>
+      <div class="inv-row">
+        <label for="rorSlider">Annual return rate</label>
+        <input type="range" id="rorSlider" min="1" max="20" step="0.5" value="7">
+        <span class="val" id="rorVal">7.0%</span>
+      </div>
+
+      <hr class="divider">
+
+      <p class="section-label">Contributions</p>
+      <div class="inv-row">
+        <label for="contribSlider">Monthly contribution</label>
+        <input type="range" id="contribSlider" min="0" max="5000" step="50" value="500">
+        <span class="val" id="contribVal">$500</span>
+      </div>
+
+      <div class="contrib-toggle">
+        <input type="checkbox" id="enableIncrease" checked>
+        <label for="enableIncrease">Increase contributions over time</label>
+      </div>
+
+      <div class="increase-block" id="increaseBlock">
+        <div class="inv-row">
+          <label for="increaseSlider">Annual increase</label>
+          <input type="range" id="increaseSlider" min="0" max="15" step="0.5" value="3">
+          <span class="val" id="increaseVal">3.0%</span>
+        </div>
+        <div class="inv-row">
+          <label for="capSlider">Cap contributions at ($)</label>
+          <input type="range" id="capSlider" min="0" max="10000" step="100" value="3000">
+          <span class="val" id="capVal">$3,000/mo</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="card">
+      <div class="metric-cards" id="summaryCards">
+        <div class="metric-card">
+          <p class="mc-label">Final balance</p>
+          <p class="mc-val" id="finalBal">—</p>
+          <p class="mc-sub" id="finalYear">at year 30</p>
+        </div>
+        <div class="metric-card">
+          <p class="mc-label">Total contributed</p>
+          <p class="mc-val" id="totalContrib">—</p>
+        </div>
+        <div class="metric-card">
+          <p class="mc-label">Total growth</p>
+          <p class="mc-val" id="totalGrowth">—</p>
+          <p class="mc-sub" id="multiplier">—</p>
+        </div>
+      </div>
+
+      <div class="legend" id="legend">
+        <span><span class="legend-swatch" style="background: var(--contrib-color);"></span>Contributions</span>
+        <span><span class="legend-swatch" style="background: var(--accent);"></span>Investment growth</span>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="growthChart" role="img" aria-label="Area chart showing investment portfolio balance over time.">Investment growth chart showing portfolio value over time.</canvas>
+      </div>
+
+      <div id="tableContainer"></div>
+    </div>
+
+    <footer>For illustrative purposes only. Not financial advice.</footer>
+
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let chartInst = null;
+
+    function fmt(n) {
+      if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+      if (n >= 1e3) return '$' + Math.round(n / 1000) + 'K';
+      return '$' + Math.round(n).toLocaleString();
+    }
+
+    function fmtFull(n) {
+      return '$' + Math.round(n).toLocaleString();
+    }
+
+    function calcData() {
+      const initial = parseFloat($('initialBalance').value) || 0;
+      const ror = parseFloat($('rorSlider').value) / 100;
+      const monthlyBase = parseFloat($('contribSlider').value);
+      const yearsTotal = parseInt($('years').value) || 30;
+      const doIncrease = $('enableIncrease').checked;
+      const annualIncrease = doIncrease ? parseFloat($('increaseSlider').value) / 100 : 0;
+      const capMonthly = doIncrease ? parseFloat($('capSlider').value) : Infinity;
+
+      const monthlyRate = ror / 12;
+      let balance = initial;
+      let totalContrib = initial;
+      let currentMonthly = monthlyBase;
+
+      const snapshots = [];
+      for (let y = 0; y <= yearsTotal; y++) {
+        if (y > 0) {
+          for (let m = 0; m < 12; m++) {
+            balance = balance * (1 + monthlyRate) + currentMonthly;
+            totalContrib += currentMonthly;
+          }
+          if (doIncrease) {
+            currentMonthly = Math.min(currentMonthly * (1 + annualIncrease), capMonthly);
+          }
+        }
+        snapshots.push({ year: y, balance, contributed: totalContrib });
+      }
+      return { snapshots, yearsTotal, initial };
+    }
+
+    function render() {
+      const { snapshots, yearsTotal, initial } = calcData();
+      const last = snapshots[snapshots.length - 1];
+      const growthAmt = last.balance - last.contributed;
+      const mult = last.balance / (initial || 1);
+
+      $('finalBal').textContent = fmt(last.balance);
+      $('finalYear').textContent = 'at year ' + yearsTotal;
+      $('totalContrib').textContent = fmt(last.contributed);
+      $('totalGrowth').textContent = fmt(growthAmt);
+      $('multiplier').textContent = mult.toFixed(1) + 'x your money';
+
+      const labels = snapshots.map(s => 'Yr ' + s.year);
+      const balances = snapshots.map(s => Math.round(s.balance));
+      const contribs = snapshots.map(s => Math.round(s.contributed));
+
+      const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+      const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+      const textColor = isDark ? '#9a9891' : '#888780';
+      const accentColor = isDark ? '#7f77dd' : '#534ab7';
+      const accentBg = isDark ? 'rgba(83,74,183,0.35)' : 'rgba(175,169,236,0.35)';
+      const contribColor = isDark ? '#888780' : '#b4b2a9';
+      const contribBg = isDark ? 'rgba(95,94,90,0.35)' : 'rgba(180,178,169,0.35)';
+
+      if (chartInst) chartInst.destroy();
+      chartInst = new Chart($('growthChart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Contributions',
+              data: contribs,
+              fill: true,
+              backgroundColor: contribBg,
+              borderColor: contribColor,
+              borderWidth: 1.5,
+              pointRadius: 0,
+              tension: 0.4
+            },
+            {
+              label: 'Balance',
+              data: balances,
+              fill: '-1',
+              backgroundColor: accentBg,
+              borderColor: accentColor,
+              borderWidth: 2,
+              pointRadius: ctx => snapshots[ctx.dataIndex].year % 5 === 0 && snapshots[ctx.dataIndex].year > 0 ? 3 : 0,
+              pointBackgroundColor: accentColor,
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ' ' + ctx.dataset.label + ': ' + fmtFull(ctx.parsed.y)
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { size: 11 }, maxTicksLimit: 10, autoSkip: true }
+            },
+            y: {
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { size: 11 }, callback: v => fmt(v) }
+            }
+          }
+        }
+      });
+
+      const milestones = snapshots.filter(s => s.year % 5 === 0 && s.year > 0);
+      let prevBal = initial;
+      let prevContrib = initial;
+
+      const rows = milestones.map(s => {
+        const gain = s.balance - prevBal;
+        const isLast = s.year === snapshots[snapshots.length - 1].year;
+        prevBal = s.balance;
+        prevContrib = s.contributed;
+        return `<tr class="${isLast ? 'highlight' : ''}">
+          <td>Year ${s.year}</td>
+          <td>${fmtFull(s.balance)}</td>
+          <td>${fmtFull(s.contributed)}</td>
+          <td>${fmtFull(Math.max(0, s.balance - s.contributed))}</td>
+          <td class="gain-cell">+${fmt(Math.max(0, gain))}</td>
+        </tr>`;
+      }).join('');
+
+      $('tableContainer').innerHTML = `
+        <table>
+          <thead><tr>
+            <th>Milestone</th><th>Balance</th><th>Contributed</th><th>Growth</th><th>5-yr gain</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    ['initialBalance', 'years'].forEach(id => $(id).addEventListener('input', render));
+
+    [
+      ['rorSlider', 'rorVal', v => v + '%'],
+      ['contribSlider', 'contribVal', v => '$' + parseInt(v).toLocaleString()],
+      ['increaseSlider', 'increaseVal', v => v + '%'],
+      ['capSlider', 'capVal', v => '$' + parseInt(v).toLocaleString() + '/mo']
+    ].forEach(([sliderId, outId, fmtFn]) => {
+      $(sliderId).addEventListener('input', e => {
+        $(outId).textContent = fmtFn(e.target.value);
+        render();
+      });
+    });
+
+    $('enableIncrease').addEventListener('change', e => {
+      $('increaseBlock').style.opacity = e.target.checked ? '1' : '0.4';
+      $('increaseBlock').style.pointerEvents = e.target.checked ? '' : 'none';
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
